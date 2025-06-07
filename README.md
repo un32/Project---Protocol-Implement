@@ -65,9 +65,12 @@ Once connected, use the following commands at the client prompt:
 - quit – Disconnect and exit
 
 ## Default User Accounts
+
 The server comes with these pre-configured users:
 
-Username	Password
-admin	admin
-user1	password
-user2	password
+| Username | Password |
+|----------|----------|
+| admin    | admin    |
+| user1    | password |
+| user2    | password |
+
