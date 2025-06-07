@@ -7,6 +7,7 @@ import time
 import json
 import argparse
 import sys
+import hashlib
 
 # Import protocol definitions and messages classes
 from sgcp_protocol import (
@@ -33,16 +34,20 @@ class SGCPClient:
 
     def _get_next_sequence(self):
         # Generate the next message sequence number (wraps around at 2^32)
-        self.sequence_counter = (self.sequence_counter + 1) % (2**32)
+        self.sequence_counter = (self.sequence_counter + 1) & 0xFFFFFFFF
         return self.sequence_counter
 
     def connect(self):
         try:
-            # Connect to the SGCP server (TCP)
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            # Use TLS for connection to the SGCP server
+            raw_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+            # For local testing, you can use the following to skip verification (not for production!)
+            # context.check_hostname = False
+            # context.verify_mode = ssl.CERT_NONE
+            self.socket = context.wrap_socket(raw_socket, server_hostname=self.server_host)
             self.socket.connect((self.server_host, self.server_port))
             self.state = ProtocolState.STATE_CONNECTING
-
             print(f"Connected to SGCP server at {self.server_host}:{self.server_port}")
 
             # Start a background thread to receive messages from server
@@ -64,7 +69,7 @@ class SGCPClient:
                     break
 
                 # Parse header
-                header = struct.unpack('!BBHIIB3s', header_data)
+                header = struct.unpack('!BBHIIBxxx', header_data)
                 payload_length = header[2]
 
                 # Receive payload
@@ -139,7 +144,7 @@ class SGCPClient:
             print(f"Server: {server_id}, Version: {version}.{minor}")
 
             # Send capabilities to server
-            caps_payload = struct.pack('!I', Capabilities.CAP_BASIC_CHAT | Capabilities.CAP_FILE_TRANSFER)
+            caps_payload = struct.pack('!I', Capabilities.CAP_BASIC_CHAT)
             caps_msg = SGCPMessage(MessageType.MSG_CAPABILITIES, caps_payload)
             caps_msg.set_sequence_number(self._get_next_sequence())
             self._send_message(caps_msg)
@@ -166,18 +171,20 @@ class SGCPClient:
         # Handle authentication response (success/failure)
         try:
             payload = message.payload
-            if len(payload) < 7:
+            if len(payload) < 11:
                 print("Invalid AUTH_RESPONSE")
                 return
             
             status = payload[0]
             msg_length = struct.unpack('!H', payload[1:3])[0]
             session_token = struct.unpack('!I', payload[3:7])[0]
+            user_id = struct.unpack('!I', payload[7:11])[0]
 
-            auth_message = payload[7:7+msg_length].decode('utf-8')
+            auth_message = payload[11:11+msg_length].decode('utf-8')
 
             if status == 1: # Success
                 self.session_token = session_token
+                self.user_id = user_id  # Store received user_id
                 self.state = ProtocolState.STATE_ACTIVE
                 print(f"Authentication successful: {auth_message}")
                 print("Available commands: join <group_id>, leave <group_id>, list, chat <message>, quit")
@@ -247,7 +254,7 @@ class SGCPClient:
             #Send HELLO message
             client_id = "SGCP_Client_v1.0"
             hello_payload = struct.pack('!BBIH', PROTOCOL_VERSION, 0,
-                                      Capabilities.CAP_BASIC_CHAT | Capabilities.CAP_FILE_TRANSFER,
+                                      Capabilities.CAP_BASIC_CHAT,
                                       len(client_id))
             hello_payload += client_id.encode('utf-8')
 
@@ -272,9 +279,10 @@ class SGCPClient:
         
         try:
             # Send authentication request
-            auth_payload = struct.pack('!BHH', 0, len(username), len(password))
+            password_hash = hashlib.sha256(password.encode()).hexdigest()
+            auth_payload = struct.pack('!BHH', 0, len(username), len(password_hash))
             auth_payload += username.encode('utf-8')
-            auth_payload += password.encode('utf-8')
+            auth_payload += password_hash.encode('utf-8')
 
             auth_msg = SGCPMessage(MessageType.MSG_AUTH_REQUEST, auth_payload,
                                  MessageFlags.FLAG_ENCRYPTED | MessageFlags.FLAG_REQUIRES_ACK)
