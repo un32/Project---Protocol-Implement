@@ -74,3 +74,50 @@ The server comes with these pre-configured users:
 | user1    | password |
 | user2    | password |
 
+## Example Usage
+
+### 1. Start the server (Terminal 1)
+```sh
+python3 server.py
+# Output: SGCP Server started on localhost:8888
+```
+
+### 2. Start the first client (Terminal 2)
+```sh
+python3 client.py
+> login admin admin
+> list
+> join 1
+> chat 1 Hello everyone!
+```
+
+### 3. Start a second client (Terminal 3)
+```sh
+python3 client.py
+> login user1 password
+> join 1
+> chat 1 Hi admin!
+# [Group 1] User 1: Hello everyone!  (receives admin's message)
+```
+
+## Troubleshooting
+- **"Address already in use" error:** Use a different port, e.g., python3 server.py --port 9001
+- **Client can't connect:** Make sure server is running, check host/port and firewall settings
+- **Authentication fails:** Double-check username and password
+- **No messages received:** Ensure both clients have joined the same group
+
+## Protocol Compliance
+- 16-byte, big-endian headers; UTF-8 encoded text
+- All core message types and protocol states implemented
+- Full DFA-based protocol state validation
+- Comprehensive error code support
+- Group-based chat and user isolation
+
+## Future Enhancements
+- End-to-end encryption (AES-GCM)
+- File transfer support
+- Custom group creation/removal
+- Advanced permissions (admins, moderators)
+= Web or graphical client
+
+
