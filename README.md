@@ -63,3 +63,11 @@ Once connected, use the following commands at the client prompt:
 - leave <group_id> – Leave a group
 - chat <group_id> <message> – Send a message to a group (e.g., chat 1 Hello!)
 - quit – Disconnect and exit
+
+## Default User Accounts
+The server comes with these pre-configured users:
+
+Username	Password
+admin	admin
+user1	password
+user2	password
