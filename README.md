@@ -45,4 +45,26 @@ Open a terminal and run:
 ```sh
 python3 server.py --host localhost --port 8888
 # Or use a custom host/port if needed
+```
 
+## Running the Server
+Open another terminal and run:
+```sh
+python3 client.py --host localhost --port 8888
+# Or connect to a custom host/port if needed
+```
+
+## Client Commands
+Once connected, use the following commands at the client prompt:
+
+login <username> <password> – Authenticate with the server
+
+list – List all available groups
+
+join <group_id> – Join a group (e.g., join 1)
+
+leave <group_id> – Leave a group
+
+chat <group_id> <message> – Send a message to a group (e.g., chat 1 Hello!)
+
+quit – Disconnect and exit
