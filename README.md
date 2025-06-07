@@ -18,4 +18,9 @@ This is a complete implementation of the Secure Group Chat Protocol (SGCP) as sp
 - **Platform**: Linux, macOS, or Windows (WSL compatible)
 - **Dependencies**: None (uses only Python standard library)
 
-pre> ## File Structure ``` sgcp-implementation/ ├── server.py # SGCP server ├── client.py # SGCP client (CLI user interface) ├── sgcp_protocol.py # Protocol constants, enums, and message logic └── README.md # Documentation ``` </pre>
+ ## File Structure 
+ ``` sgcp-implementation/
+ ├── server.py # SGCP server
+ ├── client.py # SGCP client (CLI user interface)
+ ├── sgcp_protocol.py # Protocol constants, enums, and message logic
+ └── README.md # Documentation ``` 
