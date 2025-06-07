@@ -57,14 +57,9 @@ python3 client.py --host localhost --port 8888
 ## Client Commands
 Once connected, use the following commands at the client prompt:
 
-login <username> <password> – Authenticate with the server
-
-list – List all available groups
-
-join <group_id> – Join a group (e.g., join 1)
-
-leave <group_id> – Leave a group
-
-chat <group_id> <message> – Send a message to a group (e.g., chat 1 Hello!)
-
-quit – Disconnect and exit
+- login <username> <password> – Authenticate with the server
+- list – List all available groups
+- join <group_id> – Join a group (e.g., join 1)
+- leave <group_id> – Leave a group
+- chat <group_id> <message> – Send a message to a group (e.g., chat 1 Hello!)
+- quit – Disconnect and exit
