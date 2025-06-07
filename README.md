@@ -25,3 +25,4 @@ sgcp-implementation/
 ├── client.py # SGCP client (CLI user interface)
 ├── sgcp_protocol.py # Protocol constants, enums, and message logic
 └── README.md # Documentation
+
