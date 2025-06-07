@@ -26,3 +26,23 @@ sgcp-implementation/
 ├── sgcp_protocol.py # Protocol constants, enums, and message logic
 └── README.md # Documentation
 
+```
+## Installation & Setup
+
+1. **Clone or download this repository**
+2. Ensure all files (`server.py`, `client.py`, `sgcp_protocol.py`, `README.md`) are in the same directory
+3. **Verify Python installation:**
+    ```sh
+    python3 --version
+    # Should show Python 3.7 or higher
+    ```
+
+---
+
+## Running the Server
+
+Open a terminal and run:
+```sh
+python3 server.py --host localhost --port 8888
+# Or use a custom host/port if needed
+
