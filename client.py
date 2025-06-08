@@ -39,15 +39,11 @@ class SGCPClient:
 
     def connect(self):
         try:
-            # Use TLS for connection to the SGCP server
-            raw_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-            # For local testing, you can use the following to skip verification (not for production!)
-            # context.check_hostname = False
-            # context.verify_mode = ssl.CERT_NONE
-            self.socket = context.wrap_socket(raw_socket, server_hostname=self.server_host)
+            # Connect to the SGCP server (TCP)
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.connect((self.server_host, self.server_port))
             self.state = ProtocolState.STATE_CONNECTING
+
             print(f"Connected to SGCP server at {self.server_host}:{self.server_port}")
 
             # Start a background thread to receive messages from server
