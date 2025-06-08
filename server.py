@@ -152,7 +152,7 @@ class SGCPServer:
         # Strict state check for authentication
         if current_state != ProtocolState.STATE_AUTHENTICATING and msg_type == MessageType.MSG_AUTH_REQUEST:
             self._send_error(client_socket, ErrorCode.ERR_INVALID_STATE, "Auth not allowed now")
-                return
+            return
         print(f"Processing {msg_type.name} in state {current_state.name}")
 
         if current_state == ProtocolState.STATE_CONNECTING:
