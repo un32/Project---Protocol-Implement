@@ -8,6 +8,7 @@ import time
 import argparse
 import hashlib
 import secrets
+import ssl
 
 from sgcp_protocol import (
     PROTOCOL_VERSION, HEADER_SIZE, DEFAULT_PORT,
@@ -108,7 +109,7 @@ class SGCPServer:
                     header_data = self._recv_exact(client_socket, HEADER_SIZE)
                     if not header_data:
                         break
-                    header = struct.unpack('!BBHIIB3s', header_data)
+                    header = struct.unpack('!BBHIIBxxx', header_data)
                     payload_length = header[2]
 
                      # Receive message payload if present
@@ -148,6 +149,10 @@ class SGCPServer:
         client_info = self.clients[client_socket]
         current_state = client_info['state']
         msg_type = MessageType(message.header.message_type)
+        # Strict state check for authentication
+        if current_state != ProtocolState.STATE_AUTHENTICATING and msg_type == MessageType.MSG_AUTH_REQUEST:
+            self._send_error(client_socket, ErrorCode.ERR_INVALID_STATE, "Auth not allowed now")
+                return
         print(f"Processing {msg_type.name} in state {current_state.name}")
 
         if current_state == ProtocolState.STATE_CONNECTING:
@@ -200,7 +205,7 @@ class SGCPServer:
             
              # Build and send HELLO response
             hello_response = struct.pack('!BBIH', PROTOCOL_VERSION, 0,
-                                       Capabilities.CAP_BASIC_CHAT | Capabilities.CAP_FILE_TRANSFER,
+                                       Capabilities.CAP_BASIC_CHAT,
                                        len("SGCP_Server"))
             hello_response += b"SGCP_Server"
             response = SGCPMessage(MessageType.MSG_HELLO, hello_response)
@@ -228,7 +233,7 @@ class SGCPServer:
             self.clients[client_socket]['capabilities'] = client_capabilities
 
             # Send server capabilities 
-            server_caps = Capabilities.CAP_BASIC_CHAT | Capabilities.CAP_FILE_TRANSFER
+            server_caps = Capabilities.CAP_BASIC_CHAT
             caps_payload = struct.pack('!I', server_caps)
 
             response = SGCPMessage(MessageType.MSG_CAPABILITIES, caps_payload)
@@ -261,7 +266,7 @@ class SGCPServer:
             password = payload[5+username_length:5+username_length+auth_data_length].decode('utf-8')
 
             # Authenticate user
-            if username in self.users and self.users[username]['password'] == self._hash_password(password):
+            if username in self.users and self.users[username]['password'] == password:
                 # Authenticate successful
                 session_token = self._generate_session_token()
                 user_id = self.users[username]['user_id']
@@ -273,7 +278,7 @@ class SGCPServer:
 
                 # Send sucess response
                 success_msg = f"Welcome {username}!"
-                auth_response = struct.pack('!BHI', 1, len(success_msg), session_token)
+                auth_response = struct.pack('!BHI', 1, len(success_msg), session_token, user_id)
                 auth_response += success_msg.encode('utf-8')
 
                 response = SGCPMessage(MessageType.MSG_AUTH_RESPONSE, auth_response)
