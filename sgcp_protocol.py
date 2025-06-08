@@ -6,9 +6,9 @@ from enum import IntEnum
 from dataclasses import dataclass
 
 #Protocol constant
-PROTOCOL_VERSION = 0x01
-HEADER_SIZE = 16
-DEFAULT_PORT = 8888
+PROTOCOL_VERSION = 0x01 # Current protocol version
+HEADER_SIZE = 16        # Fixed header size in bytes
+DEFAULT_PORT = 8888     # Defult TCP port
 
 class MessageType(IntEnum):
     """SGCP Message Types"""
@@ -90,13 +90,13 @@ class Capabilities(IntEnum):
 @dataclass
 class SGCPHeader:
     #SGCP Message Header Structure
-    version: int
-    message_type: int
-    payload_length: int
-    sequence_number: int
-    timestamp: int
-    flags: int
-    reserved: bytes
+    version: int            # Protocol version
+    message_type: int       # Message type
+    payload_length: int     # Length of the message payload in bytes
+    sequence_number: int    # Unique message sequence number
+    timestamp: int          # Unix timestamps
+    flags: int              # Message flags
+    reserved: bytes         # 3 bytes reserves (always zero)
 
 class SGCPMessage:
     #SGCP Message Handler
@@ -109,7 +109,7 @@ class SGCPMessage:
             sequence_number=0,
             timestamp=int(time.time()),
             flags=flags,
-            reserved=b'\x00\x00\x00'
+            reserved=b'\x00\x00\x00' # Always pad with three zero bytes
         )
         self.payload = payload
     
@@ -118,34 +118,46 @@ class SGCPMessage:
         self.header.sequence_number = seq_num
     
     def serialize(self) -> bytes:
-        # Serialize message to bytes for transmission
+        """
+        Serialize the SGCPMessage to bytes for sending on the network.
+        Note: struct.pack 'xxx' means pad with 3 zero bytes for the reserved field.
+        Do not pass self.header.reserved; it's just always padding!
+        """
         header_bytes = struct.pack(
-            '!BBHIIB3s',
+            '!BBHIIBxxx',            # 16 bytes: (B=1, B=1, H=2, I=4, I=4, B=1, xxx=3)
             self.header.version,
             self.header.message_type,
             self.header.payload_length,
             self.header.sequence_number,
             self.header.timestamp,
             self.header.flags,
-            self.header.reserved
         )
         return header_bytes + self.payload
     
     @classmethod
     def deserialize(cls, data: bytes):
-        # Deserialize bytes to SGCPMessage
+        """
+        Parse bytes received from the network into an SGCPMessage.
+        Throws ValueError if input is not valid.
+        """
         if len(data) < HEADER_SIZE:
             raise ValueError("Insufficient data for header")
-        
-        header_data = struct.unpack('!BBHIIB3s', data[:HEADER_SIZE])
-        header = SGCPHeader(*header_data)
-        
+        header_data = struct.unpack('!BBHIIBxxx', data[:HEADER_SIZE])
+        header = SGCPHeader(
+            version=header_data[0],
+            message_type=header_data[1],
+            payload_length=header_data[2],
+            sequence_number=header_data[3],
+            timestamp=header_data[4],
+            flags=header_data[5],
+            reserved=b'\x00\x00\x00'
+        )
+        # Version check for safety
+        if header.version != PROTOCOL_VERSION:
+            raise ValueError("Unsupported protocol version")
         if len(data) < HEADER_SIZE + header.payload_length:
             raise ValueError("Insufficient data for payload")
-        
         payload = data[HEADER_SIZE:HEADER_SIZE + header.payload_length]
-        
         msg = cls(MessageType(header.message_type), payload, MessageFlags(header.flags))
         msg.header = header
         return msg
-
